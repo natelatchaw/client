@@ -1,5 +1,4 @@
 import {
-  Console,
   Core,
   Dispatch,
   Event,
@@ -24,7 +23,7 @@ async function start() {
   dotenv.config();
   const endpoint: URL = new URL('wss://gateway.discord.gg/?v=9&encoding=json');
   const token: string = process.env.TOKEN ?? '';
-  Console.log(`Token: ${token}`);
+  console.log(`Token: ${token}`);
   const core: Core = new Core(endpoint, token);
   core.onDispatch((dispatch: Dispatch<Event>) => {
     // if the dispatch's event code is undefined, return
