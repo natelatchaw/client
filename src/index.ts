@@ -1,11 +1,11 @@
 import {
-  Core,
   Dispatch,
   Event,
-} from 'discord-bot/dist';
+} from 'discord-models';
 import { File } from './models/file';
 import dotenv from 'dotenv';
 import { URL } from 'url';
+import { Core } from './models/core';
 
 /**
  * Open the connection to Discord
@@ -28,8 +28,8 @@ async function start() {
   core.onDispatch((dispatch: Dispatch<Event>) => {
     // if the dispatch's event code is undefined, return
     if (dispatch.t == undefined) return;
-    const event: Event = dispatch.d;
-    console.log(event);
+    // const event: Event = dispatch.d;
+    console.log(dispatch.t);
   });
 }
 
