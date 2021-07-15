@@ -6,9 +6,9 @@ export type Resolution = (value?: any) => void;
 export type Rejection = (reason?: Error) => void;
 
 /**
- * @class Client
+ * @class GatewayClient
  */
-export class Client {
+export class GatewayClient {
     private webSocket: WebSocket;
     public sequence: number;
 

@@ -1,6 +1,6 @@
 import { URL } from 'url';
 import WebSocket from 'ws';
-import { Client } from './client';
+import { GatewayClient } from './gatewayClient';
 import { GatewayPayload } from 'discord-models';
 import { Dispatch } from 'discord-models';
 import { Hello } from 'discord-models';
@@ -14,7 +14,7 @@ import { Event } from 'discord-models';
 export class Core {
   private endpoint: URL;
   private token: string;
-  private client: Client;
+  private client: GatewayClient;
   private interval: number = Number.MAX_SAFE_INTEGER;
   private acknowledged: boolean;
   private session_id?: string;
@@ -27,7 +27,7 @@ export class Core {
   public constructor(endpoint: URL, token: string) {
     this.endpoint = endpoint;
     this.token = token;
-    this.client = new Client(endpoint);
+    this.client = new GatewayClient(endpoint);
     this.attachListeners();
     this.acknowledged = false;
   }
@@ -128,7 +128,7 @@ export class Core {
    */
   public async reconnect() {
     this.client.close(1012);
-    this.client = new Client(this.endpoint);
+    this.client = new GatewayClient(this.endpoint);
     if (this.session_id == undefined) return;
     const data: ResumeData = { token: this.token, session_id: this.session_id, seq: this.client.sequence };
     const payload: Resume = { op: 6, d: data, s: null, t: null };

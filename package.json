@@ -4,7 +4,7 @@
   "description": "",
   "main": "index.js",
   "dependencies": {
-    "discord-models": "file:../discord-bot/dist",
+    "discord-models": "file:../discord-models/dist",
     "dotenv": "^10.0.0",
     "g": "^2.0.1",
     "ws": "^7.5.3"
@@ -23,8 +23,8 @@
     "test": "test",
     "start": "npm run build && npm run serve",
     "serve": "node dist/index.js",
-    "install_discord": "npm install ..\\discord-bot",
-    "remove_discord": "npm remove discord-bot",
+    "install_discord": "npm install ..\\discord-models\\dist",
+    "remove_discord": "npm remove discord-models",
     "update_discord": "npm run remove_discord && npm run install_discord"
   },
   "author": "",
