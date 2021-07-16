@@ -19,14 +19,16 @@ export class Dictionary<T> implements Iterable<T> {
      * @return { DictionaryIterator<T, TReturn, TNext> }
      */
     [Symbol.iterator](): DictionaryIterator<T, any, undefined> {
-        return new DictionaryIterator(Object.getOwnPropertyNames(this), this);
+        const keys: Array<string> = Object.getOwnPropertyNames(this);
+        const dictionary: Dictionary<T> = this;
+        return new DictionaryIterator(keys, dictionary);
     }
 }
 
 /**
  * @class DictionaryIterator
  */
-class DictionaryIterator<T, TReturn = any, TNext = undefined> implements Iterator<T> {
+class DictionaryIterator<T, TReturn, TNext = T> implements Iterator<T> {
     /** @property { Dictionary<T> } dict */
     public dict: Dictionary<T>;
 
@@ -47,8 +49,8 @@ class DictionaryIterator<T, TReturn = any, TNext = undefined> implements Iterato
      * @param { Dictionary<T> } dict
      */
     public constructor(keys: Array<string>, dict: Dictionary<T>) {
-        this.keys = keys;
         this.index = 0;
+        this.keys = keys;
         this.dict = dict;
     }
 
@@ -57,37 +59,36 @@ class DictionaryIterator<T, TReturn = any, TNext = undefined> implements Iterato
      * @param { any[] } value
      * @return { DictionaryIteratorResult<T> }
      */
-    next(value?: any): IteratorResult<T, TReturn> {
-        const nextValue: IteratorResult<T, any> = {
-            value: this.dict[this.keys[this.index]],
-            done: this.index == this.lastIndex,
-        };
-        this.index = this.index++;
-        return nextValue;
+    next(...args: Array<any> | Array<undefined>): IteratorResult<T, any> {
+        const value: T | undefined = this.dict[this.keys[++this.index]];
+        if (value) {
+            const nextValue: IteratorYieldResult<T> = { done: false, value: value };
+            return nextValue;
+        }
+        else {
+            const nextValue: IteratorReturnResult<any> = { done: true, value: value };
+            return nextValue;
+        }
     }
 
     /**
      * @method next
      * @param { any } value
-     * @return { IteratorResult<T, TReturn> }
+     * @return { IteratorResult<T, any> }
      */
-    return?(value?: any): IteratorResult<T, TReturn> {
-        throw new Error('Method not implemented.');
-        const result: IteratorResult<T, TReturn> = {
-            done: true,
-            value: undefined,
-        };
+    return?(...args: Array<any> | Array<undefined>): IteratorResult<T, any> {
+        const result: IteratorReturnResult<any> = { done: true, value: undefined };
         return result;
     }
 
     /**
      * @method next
      * @param { any } e
-     * @return { DictionaryIteratorResult<T, TReturn> }
+     * @return { DictionaryIteratorResult<T, any> }
      */
-    throw?(e?: any): IteratorResult<T, TReturn> {
+    throw?(e?: any): IteratorResult<T, any> {
         throw new Error('Method not implemented.');
-        const result: IteratorResult<T, TReturn> = {
+        const result: IteratorResult<T, any> = {
             done: true,
             value: undefined,
         };
