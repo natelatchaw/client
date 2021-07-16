@@ -11,27 +11,7 @@ import { ClientRequest, IncomingMessage, OutgoingHttpHeader } from 'http';
 import * as https from 'https';
 import { RequestOptions } from 'https';
 import { Dictionary } from './dictionary';
-
-/**
- * @class OutgoingHttpHeaderPair
- */
-export class OutgoingHttpHeaderPair {
-    /** @property { string } key - the header key */
-    public key: string;
-
-    /** @property { OutgoingHttpHeader } value - the header value */
-    public value: OutgoingHttpHeader;
-
-    /**
-     * @constructor
-     * @param { string } key - the header key
-     * @param { OutgoingHttpHeader } value - the header value
-     */
-    constructor(key: string, value: OutgoingHttpHeader) {
-        this.key = key;
-        this.value = value;
-    }
-}
+import { OutgoingHttpHeaderPair } from './outgoingHttpHeaderPair';
 
 /**
  * @interface OutgoingHttpHeaders
@@ -76,34 +56,48 @@ export class HttpClient {
         this.url.port = value;
     }
 
-    /** @property { string } token */
-    public get token(): string {
-        const authorizationHeaders: Array<OutgoingHttpHeaderPair> = this.headerPairs.filter((headerPair: OutgoingHttpHeaderPair) => headerPair.key === 'Authorization');
-        const authorizationHeader: OutgoingHttpHeaderPair = authorizationHeaders.pop();
-        return authorizationHeader.value.toString().split(' ').pop();
-    }
     /**
-     * @property { string } token
-     * @param { string } value
+     * @property { string | undefined } token
      */
-    public set token(value: string) {
+    public get token(): string | undefined {
+        // get all headers with an Authorization key
         const authorizationHeaders: Array<OutgoingHttpHeaderPair> = this.headerPairs.filter((headerPair: OutgoingHttpHeaderPair) => headerPair.key === 'Authorization');
-        authorizationHeaders.forEach((authorizationHeader: OutgoingHttpHeaderPair) => this.headerPairs.splice(this.headerPairs.indexOf(authorizationHeader), 1));
-        this.headerPairs.push(new OutgoingHttpHeaderPair('Authorization', `Basic ${value}`));
+        // get the first header from the filtered headers
+        const authorizationHeaderPair: OutgoingHttpHeaderPair | undefined = authorizationHeaders.pop();
+        // return the credential section
+        return authorizationHeaderPair?.credentials;
     }
 
-    /** @property { OutgoingHttpHeaders } headers - assembled headers to be used in an API call */
+    /**
+     * @property { string } token
+     * @param { string | undefined } value
+     */
+    public set token(value: string | undefined) {
+        // get all headers with an authorization key
+        const authorizationHeaders: Array<OutgoingHttpHeaderPair> = this.headerPairs.filter((headerPair: OutgoingHttpHeaderPair) => headerPair.key === 'Authorization');
+        // remove all existing authorization headers from the list of headers
+        authorizationHeaders.forEach((authorizationHeader: OutgoingHttpHeaderPair) => this.headerPairs.splice(this.headerPairs.indexOf(authorizationHeader), 1));
+        // push a new authorization header
+        if (value) this.headerPairs.push(new OutgoingHttpHeaderPair('Authorization', 'Bot', value));
+    }
+
+    /**
+     * @property { OutgoingHttpHeaders } headers - assembled headers to be used in an API call
+     * */
     public get headers(): OutgoingHttpHeaders {
+        // create a new header dictionary
         const outgoingHttpHeaders: Dictionary<OutgoingHttpHeader> = new Dictionary<OutgoingHttpHeader>();
+        // add each header to the dictionary
         this.headerPairs.forEach((header: OutgoingHttpHeaderPair) => outgoingHttpHeaders[header.key] = header.value);
         return outgoingHttpHeaders;
     }
+
     /**
      * @property { OutgoingHttpHeaders } headers
      * @param { OutgoingHttpHeaders } value
      */
     public set headers(value: OutgoingHttpHeaders) {
-        const headers: Dictionary<OutgoingHttpHeader> = (value as unknown) as Dictionary<OutgoingHttpHeader>;
+        const headers: Dictionary<OutgoingHttpHeader> = value as Dictionary<OutgoingHttpHeader>;
         for (const headerKey in headers) {
             const headerValue: OutgoingHttpHeader = headers[headerKey];
             this.headerPairs.push(new OutgoingHttpHeaderPair(headerKey, headerValue));
