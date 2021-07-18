@@ -1,33 +1,39 @@
 import { URL } from 'url';
 import WebSocket from 'ws';
-import { GatewayClient } from './gatewayClient';
+import { GatewayClient } from '../websocket/gatewayClient';
 import { GatewayPayload } from 'discord-models';
 import { Dispatch } from 'discord-models';
 import { Hello } from 'discord-models';
 import { Identify } from 'discord-models';
 import { Resume, ResumeData } from 'discord-models';
 import { Event } from 'discord-models';
+import { HttpClient } from '../rest/httpClient';
 
 /**
  * @class Core
  */
 export class Core {
-  private endpoint: URL;
   private token: string;
-  private client: GatewayClient;
+  private gatewayClient: GatewayClient;
+  private httpClient: HttpClient;
   private interval: number = Number.MAX_SAFE_INTEGER;
   private acknowledged: boolean;
   private session_id?: string;
 
   /**
    * @constructor
-   * @param { URL } endpoint
+   * @param { HttpClient } httpClient
+   * @param { GatewayClient } gatewayClient
    * @param { string } token
    */
-  public constructor(endpoint: URL, token: string) {
-    this.endpoint = endpoint;
+  public constructor(
+      httpClient: HttpClient,
+      gatewayClient: GatewayClient,
+      token: string,
+  ) {
     this.token = token;
-    this.client = new GatewayClient(endpoint);
+    this.gatewayClient = gatewayClient;
+    this.httpClient = httpClient;
     this.attachListeners();
     this.acknowledged = false;
   }
@@ -36,8 +42,8 @@ export class Core {
    * @return { void }
    */
   private attachListeners(): void {
-    this.client.onMessage(this.onMessage);
-    this.client.onClose(this.onClose);
+    this.gatewayClient.onMessage(this.onMessage);
+    this.gatewayClient.onClose(this.onClose);
   }
 
   /**
@@ -47,7 +53,7 @@ export class Core {
    */
   public async send(payload: GatewayPayload): Promise<void> {
     const data: string = JSON.stringify(payload);
-    return this.client.send(data);
+    return this.gatewayClient.send(data);
   }
 
   // #region EVENTS
@@ -85,7 +91,7 @@ export class Core {
    * @return { void }
    */
   public onDispatch = (listener: (dispatch: Dispatch<Event>) => void): void => {
-    this.client.onMessage((data: WebSocket.Data) => {
+    this.gatewayClient.onMessage((data: WebSocket.Data) => {
       // parse the data to a Payload object
       const payload: GatewayPayload = JSON.parse(data.toString()) as GatewayPayload;
       // if the Payload object is not a Dispatch object, return
@@ -105,7 +111,7 @@ export class Core {
    * Invoked on receipt of OPCODE 1 HEARTBEAT
    */
   private async onHeartbeat() {
-    await this.client.beat(this.interval);
+    await this.gatewayClient.beat(this.interval);
   }
 
   /**
@@ -117,7 +123,7 @@ export class Core {
     await this.identify();
     while (true) {
       this.acknowledged = false;
-      await this.client.beat(this.interval);
+      await this.gatewayClient.beat(this.interval);
       if (this.acknowledged) continue;
       else this.reconnect();
     }
@@ -127,10 +133,11 @@ export class Core {
    * Invoke to reset the websocket and attempt to resume
    */
   public async reconnect() {
-    this.client.close(1012);
-    this.client = new GatewayClient(this.endpoint);
+    const endpoint: URL = this.gatewayClient.endpoint;
+    this.gatewayClient.close(1012);
+    this.gatewayClient = new GatewayClient(endpoint);
     if (this.session_id == undefined) return;
-    const data: ResumeData = { token: this.token, session_id: this.session_id, seq: this.client.sequence };
+    const data: ResumeData = { token: this.token, session_id: this.session_id, seq: this.gatewayClient.sequence };
     const payload: Resume = { op: 6, d: data, s: null, t: null };
     await this.send(payload);
   }
