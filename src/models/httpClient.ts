@@ -1,3 +1,4 @@
+/* eslint-disable no-new-wrappers */
 /* eslint-disable guard-for-in */
 /* eslint-disable indent */
 /* eslint-disable brace-style */
@@ -12,6 +13,20 @@ import * as https from 'https';
 import { RequestOptions } from 'https';
 import { Dictionary } from './dictionary';
 import { OutgoingHttpHeaderPair } from './outgoingHttpHeaderPair';
+
+/**
+ * @type Resolution
+ * @summary
+ * Represents the resolve callback event type.
+ */
+export type Resolution<T> = (value: T | Promise<T>) => void;
+
+/**
+ * @type Rejection
+ * @summary
+ * Represents the reject callback event type.
+ */
+export type Rejection = (reason?: any) => void;
 
 /**
  * @interface OutgoingHttpHeaders
@@ -83,12 +98,13 @@ export class HttpClient {
 
     /**
      * @property { OutgoingHttpHeaders } headers - assembled headers to be used in an API call
-     * */
+     */
     public get headers(): OutgoingHttpHeaders {
         // create a new header dictionary
         const outgoingHttpHeaders: Dictionary<OutgoingHttpHeader> = new Dictionary<OutgoingHttpHeader>();
         // add each header to the dictionary
         this.headerPairs.forEach((header: OutgoingHttpHeaderPair) => outgoingHttpHeaders[header.key] = header.value);
+        // return the header dictionary
         return outgoingHttpHeaders;
     }
 
@@ -97,10 +113,14 @@ export class HttpClient {
      * @param { OutgoingHttpHeaders } value
      */
     public set headers(value: OutgoingHttpHeaders) {
+        // cast value to Dictionary<OutgoingHttpHeader>
         const headers: Dictionary<OutgoingHttpHeader> = value as Dictionary<OutgoingHttpHeader>;
-        for (const headerKey in headers) {
-            const headerValue: OutgoingHttpHeader = headers[headerKey];
-            this.headerPairs.push(new OutgoingHttpHeaderPair(headerKey, headerValue));
+        // iterate through headers dictionary
+        for (const key in headers) {
+            // get each value via the key
+            const value: OutgoingHttpHeader | undefined = headers[key];
+            // generate OutgoingHttpHeaderPair with key and value and push to headerPairs array
+            if (value) this.headerPairs.push(OutgoingHttpHeaderPair.generate(key, value));
         }
     }
 
@@ -109,8 +129,8 @@ export class HttpClient {
      */
     public get options(): RequestOptions {
         return {
-            hostname: this.hostname,
-            port: this.port,
+            hostname: this.url.hostname,
+            port: this.url.port,
             headers: this.headers,
         };
     }
@@ -120,26 +140,22 @@ export class HttpClient {
      */
     public set options(value: RequestOptions) {
         if (value.hostname) this.hostname = value.hostname;
-        if (value.port) this.port = value.port.toString();
+        if (value.port) this.url.port = value.port.toString();
         this.headers = value.headers as OutgoingHttpHeaders;
     }
 
     /**
      * @constructor
-     * @param { string } hostname - the hostname to connect to
-     * @param { string | number } port - the port to connect to
+     * @param { URL } url - the base url to connect to
      * @param { string } token - the token to use as the bearer token
      * @param { Array<OutgoingHttpHeaderPair> } headerPairs - an array of headers to include with the request
      */
     public constructor(
-        hostname: string,
-        port: string | number,
+        url: URL,
         token: string,
         headerPairs: Array<OutgoingHttpHeaderPair> = new Array<OutgoingHttpHeaderPair>(),
     ) {
-        this.url = new URL(`https://${hostname}`);
-        this.hostname = hostname;
-        this.port = port.toString();
+        this.url = url;
         this.headerPairs = headerPairs;
         this.token = token;
     }
@@ -159,10 +175,11 @@ export class HttpClient {
      * @return { Promise<string> }
      */
     public get<T>(path: string): Promise<T> {
-        const options = this.options;
+        const options: https.RequestOptions = this.options;
+        options.method = 'GET';
         options.path = path;
 
-        return new Promise((resolve, reject) => {
+        return new Promise((resolve: Resolution<T>, reject: Rejection) => {
             const request: ClientRequest = https.get(options, (message: IncomingMessage) => {
                 let buffer: string = '';
                 // if (message.statusCode != 200) { reject(new Error(message.statusCode.toString())); }
@@ -170,6 +187,51 @@ export class HttpClient {
                 message.on('end', () => resolve(JSON.parse(buffer) as T));
                 message.on('error', (error: Error) => reject(error));
             });
+            request.end();
+        });
+    }
+
+    /**
+     * @method post
+     * @param { string } path
+     * @param { T } data
+     * @return { Promise<void> }
+     */
+    public post<T>(path: string, data: T): Promise<void> {
+        const options: https.RequestOptions = this.options;
+        options.method = 'POST';
+        options.path = path;
+
+        return new Promise((resolve: Resolution<void>, reject: Rejection) => {
+            const request: ClientRequest = https.request(options, (message: IncomingMessage) => {
+                let buffer: string = '';
+                message.on('data', (chunk: string) => buffer += chunk);
+                message.on('end', () => resolve());
+                message.on('error', (error: Error) => reject(error));
+            });
+            request.write(JSON.stringify(data));
+            request.end();
+        });
+    }
+
+    /**
+     * @method delete
+     * @param { string } path
+     */
+    public async delete<T>(path: string): Promise<void> {
+        const options = this.options;
+        options.method = 'DELETE';
+        options.path = path;
+
+        return new Promise((resolve: Resolution<void>, reject: Rejection) => {
+            const request: ClientRequest = https.request(options, (message: IncomingMessage) => {
+                let buffer: string = '';
+                console.log(message.statusMessage);
+                message.on('data', (chunk: string) => buffer += chunk);
+                message.on('end', () => resolve());
+                message.on('error', (error: Error) => reject(error));
+            });
+            request.end();
         });
     }
 }

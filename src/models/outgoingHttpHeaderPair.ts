@@ -17,26 +17,40 @@ export class OutgoingHttpHeaderPair {
     public type: string;
 
     /**
-     * @property { string } credentials - the credential string used for authentication
+     * @property { string | undefined } credentials - the credential string used for authentication
      */
-    public credentials: string;
+    public credentials?: string;
 
     /**
      * @property { OutgoingHttpHeader } value - the header value
      */
     public get value(): OutgoingHttpHeader {
-      return [this.type, this.credentials].join(' ');
+      if (this.credentials) return [this.type, this.credentials].join(' ');
+      else return this.type;
     }
 
     /**
      * @constructor
      * @param { string } key - the header key
      * @param { string } type - the authentication type
-     * @param { string } credentials - the credentials
+     * @param { string | undefined } credentials - the credentials
      */
-    constructor(key: string, type: string, credentials: string) {
+    constructor(key: string, type: string, credentials: string | undefined) {
       this.key = key;
       this.type = type;
       this.credentials = credentials;
+    }
+
+    /**
+     * @static
+     * @param { string } key
+     * @param { OutgoingHttpHeader } header
+     * @return { OutgoingHttpHeaderPair }
+     */
+    public static generate(key: string, header: OutgoingHttpHeader): OutgoingHttpHeaderPair {
+      const typeCredentialPair: Array<string> = header.toString().split(' ', 2);
+      const type: string = typeCredentialPair[0];
+      const credential: string = typeCredentialPair[1];
+      return new OutgoingHttpHeaderPair(key, type, credential);
     }
 }

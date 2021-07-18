@@ -3,11 +3,10 @@
 /* eslint-disable max-len */
 /* eslint-disable indent */
 
-
 /**
  * @class Dict
  */
-export class Dictionary<T> implements Iterable<T> {
+export class Dictionary<T> implements NodeJS.Dict<T>, Iterable<T> {
     /** @constructor */
     public constructor() { }
 
