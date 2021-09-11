@@ -1,8 +1,4 @@
-<<<<<<< HEAD
 import { Snowflake } from 'discord-models';
-=======
-import { Snowflake } from '../../../discord-models/dist';
->>>>>>> 118dd38c5f11940b4b671ff6bcf3683d057e02b6
 
 /**
  * @class
