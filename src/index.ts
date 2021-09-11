@@ -1,12 +1,16 @@
 /* eslint-disable no-unused-vars */
 
 import {
+  Application,
   Dispatch,
   Event,
   Guild,
   GuildCreate,
+  MessageCreate,
   Ready,
   Snowflake,
+  TypingStart,
+  VoiceStateUpdate,
 } from 'discord-models';
 import { File } from './models/file';
 import dotenv from 'dotenv';
@@ -16,7 +20,7 @@ import { ApplicationCommand } from 'discord-models';
 import { HttpClient } from './rest/httpClient';
 import { OutgoingHttpAuthorizationHeaderPair, OutgoingHttpBasicHeaderPair } from './rest/outgoingHttpHeaderPair';
 import { GatewayClient } from './websocket/gatewayClient';
-import { DiscordEndpoint } from './rest/endpoint';
+import { DiscordEndpoint, GuildEndpoint } from './rest/endpoint';
 
 /**
  * Open the connection to Discord
@@ -35,11 +39,10 @@ async function start() {
   const token: string = process.env.TOKEN ?? '';
   console.log(`Token: ${token}`);
 
-  const headers: Array<OutgoingHttpAuthorizationHeaderPair> = [
+  const endpoint: DiscordEndpoint = new DiscordEndpoint(new URL('https://discord.com'));
 
-  ];
   const httpClient = new HttpClient(
-      new URL('https://discord.com/api'),
+      endpoint.url,
       [
         new OutgoingHttpAuthorizationHeaderPair('Authorization', 'Bot', token),
         new OutgoingHttpBasicHeaderPair('User-Agent', 'DiscordBot ($https://github.com/natelatchaw/client, $0.0.1)'),
@@ -58,16 +61,35 @@ async function start() {
     console.log(dispatch.t);
     if (dispatch.t == 'READY') {
       const ready: Ready = dispatch.d as Ready;
-      const application_id = ready.application.id;
-      console.log('Application ID', application_id);
+      const application_id: Snowflake = ready.application.id;
+      const auth: URL = getAuthorizationLink(application_id, endpoint);
+      console.log(auth.toString());
+      const application: Application = await getApplication(application_id, httpClient, endpoint);
+      console.log(application);
     }
+
     if (dispatch.t == 'GUILD_CREATE') {
       const guild_create: GuildCreate = dispatch.d as GuildCreate;
-      const application_id: Snowflake | null = guild_create.application_id;
       const guild_id: Snowflake | null = guild_create.id;
-      console.log('Application ID', application_id);
-      console.log('Guild ID', guild_id);
-      // if (application_id && guild_id) await getGuild(application_id, guild_id, httpClient);
+      if (guild_id) {
+        const guild: Guild = await getGuild(guild_id, httpClient, endpoint);
+        console.log('Received Guild', guild.name);
+      }
+    }
+
+    if (dispatch.t == 'MESSAGE_CREATE') {
+      const message_create: MessageCreate = dispatch.d as MessageCreate;
+      console.log('Received Message', message_create.content);
+    }
+
+    if (dispatch.t == 'TYPING_START') {
+      const typing_start: TypingStart = dispatch.d as TypingStart;
+      console.log('Typing Started by', typing_start.member?.user?.username);
+    }
+
+    if (dispatch.t == 'VOICE_STATE_UPDATE') {
+      const voice_state_update: VoiceStateUpdate = dispatch.d as VoiceStateUpdate;
+      console.log(voice_state_update);
     }
   });
 }
@@ -75,16 +97,39 @@ async function start() {
 /**
  * @async
  * @function
- * @param { Snowflake } application_id
  * @param { Snowflake } guild_id
  * @param { HttpClient } httpClient
+ * @param { DiscordEndpoint } endpoint
+ * @return { Promise<Guild> }
  */
-async function getGuild(application_id: Snowflake, guild_id: Snowflake, httpClient: HttpClient) {
-  const guildEndpoint = new DiscordEndpoint(new URL('https://discord.com')).version(8).guild(guild_id);
-  const path: string = guildEndpoint.url.pathname;
-  await httpClient.get<Guild>(path)
-      .then((response: Guild) => console.log(response))
-      .catch((error: any) => console.error(error));
+async function getGuild(guild_id: Snowflake, httpClient: HttpClient, endpoint: DiscordEndpoint): Promise<Guild> {
+  const guildEndpoint = endpoint.version(8).guild(guild_id);
+  const path: string = guildEndpoint.url.pathname.slice(0, -1);
+  return await httpClient.get<Guild>(path);
+}
+
+/**
+ * @async
+ * @function
+ * @param { Snowflake } application_id
+ * @param { HttpClient } httpClient
+ * @param { DiscordEndpoint } endpoint
+ * @return { Promise<Application> }
+ */
+async function getApplication(application_id: Snowflake, httpClient: HttpClient, endpoint: DiscordEndpoint): Promise<Application> {
+  const applicationEndpoint = endpoint.oauth().applications();
+  const path: string = applicationEndpoint.url.pathname.slice(0, -1);
+  return await httpClient.get<Application>(path);
+}
+
+/**
+ * @param { Snowflake } application_id
+ * @param { DiscordEndpoint } endpoint
+ * @return { string }
+ */
+function getAuthorizationLink(application_id: Snowflake, endpoint: DiscordEndpoint): URL {
+  const authorizationEndpoint = endpoint.oauth().authorize(application_id, 1);
+  return authorizationEndpoint.url;
 }
 
 /**
@@ -125,6 +170,7 @@ async function registerCommand(application_id: Snowflake, guild_id: Snowflake, h
       .catch((error: any) => console.error(error));
 }
 
+
 start()
     .then(() => console.log('Complete.'))
     .catch((error: Error) => console.error(error));
@@ -133,6 +179,7 @@ start()
 const url: URL = new URL('https://discord.com');
 const application_id: Snowflake = '243890298669802';
 const guild_id: Snowflake = '82390489023';
-const application = new DiscordEndpoint(url).version(8).application(application_id).guild(guild_id).command('8903289042');
+// const application = new DiscordEndpoint(url).version(8).application(application_id).guild(guild_id).command('8903289042');
+const application = new DiscordEndpoint(url).oauth().authorize(application_id, 1);
 console.log(application.url);
 */
