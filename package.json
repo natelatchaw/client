@@ -23,9 +23,11 @@
     "test": "test",
     "start": "npm run build && npm run serve",
     "serve": "node dist/index.js",
-    "install_discord": "npm install ..\\discord-models\\dist",
-    "remove_discord": "npm remove discord-models",
-    "update_discord": "npm run remove_discord && npm run install_discord"
+    "install_local_discord": "npm install ..\\discord-models\\dist",
+    "clone_discord_models": "git clone https://github.com/natelatchaw/discord-models ../discord-models",
+    "install_discord_models": "cd ../discord-models/ && tsc && cd ../client/",
+    "remove_discord_models": "npm remove discord-models && powershell Remove-Item ../discord-models -Recurse -Force",
+    "update_discord": "npm run remove_discord_models && npm run clone_discord_models && npm run install_discord_models"
   },
   "author": "",
   "license": "ISC"

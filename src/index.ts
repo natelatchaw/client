@@ -16,6 +16,7 @@ import { ApplicationCommand } from 'discord-models';
 import { HttpClient } from './rest/httpClient';
 import { OutgoingHttpAuthorizationHeaderPair, OutgoingHttpBasicHeaderPair } from './rest/outgoingHttpHeaderPair';
 import { GatewayClient } from './websocket/gatewayClient';
+import { DiscordEndpoint } from './rest/endpoint';
 
 /**
  * Open the connection to Discord
@@ -79,7 +80,8 @@ async function start() {
  * @param { HttpClient } httpClient
  */
 async function getGuild(application_id: Snowflake, guild_id: Snowflake, httpClient: HttpClient) {
-  const path: string = `/api/v8/guilds/${guild_id}`;
+  const guildEndpoint = new DiscordEndpoint(new URL('https://discord.com')).version(8).guild(guild_id);
+  const path: string = guildEndpoint.url.pathname;
   await httpClient.get<Guild>(path)
       .then((response: Guild) => console.log(response))
       .catch((error: any) => console.error(error));
@@ -115,13 +117,22 @@ async function registerCommand(application_id: Snowflake, guild_id: Snowflake, h
       },
     ],
   };
-  const path: string = `/api/v8/applications/${application_id}/guilds/${guild_id}/commands/866183522376482846`;
+  const path: string = new DiscordEndpoint(new URL('https://discord.com')).version(8).application(application_id).guild(guild_id).command('866183522376482846').url.pathname;
+  // const path: string = `/api/v8/applications/${application_id}/guilds/${guild_id}/commands/866183522376482846`;
   console.log(JSON.stringify(command));
   await httpClient.delete<ApplicationCommand>(path)
-      .then(() => console.log({command}))
+      .then(() => console.log({ command }))
       .catch((error: any) => console.error(error));
 }
 
 start()
     .then(() => console.log('Complete.'))
     .catch((error: Error) => console.error(error));
+
+/*
+const url: URL = new URL('https://discord.com');
+const application_id: Snowflake = '243890298669802';
+const guild_id: Snowflake = '82390489023';
+const application = new DiscordEndpoint(url).version(8).application(application_id).guild(guild_id).command('8903289042');
+console.log(application.url);
+*/
