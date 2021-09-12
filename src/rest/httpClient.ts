@@ -134,7 +134,7 @@ export class HttpClient {
 
       return new Promise((resolve: Resolution<T>, reject: Rejection) => {
         const request: ClientRequest = https.get(options, (message: IncomingMessage) => {
-          console.debug(message.statusCode, message.statusMessage);
+          console.debug(message.statusCode, message.statusMessage, options.method, options.path);
           let buffer: string = '';
           message.on('data', (chunk: string) => buffer += chunk);
           message.on('end', () => resolve(JSON.parse(buffer) as T));
@@ -157,7 +157,7 @@ export class HttpClient {
 
       return new Promise((resolve: Resolution<void>, reject: Rejection) => {
         const request: ClientRequest = https.request(options, (message: IncomingMessage) => {
-          console.debug(message.statusCode, message.statusMessage);
+          console.debug(message.statusCode, message.statusMessage, options.method, options.path);
           let buffer: string = '';
           message.on('data', (chunk: string) => buffer += chunk);
           message.on('end', () => resolve());
@@ -179,7 +179,7 @@ export class HttpClient {
 
       return new Promise((resolve: Resolution<void>, reject: Rejection) => {
         const request: ClientRequest = https.request(options, (message: IncomingMessage) => {
-          console.debug(message.statusCode, message.statusMessage);
+          console.debug(message.statusCode, message.statusMessage, options.method, options.path);
           let buffer: string = '';
           console.log(message.statusMessage);
           message.on('data', (chunk: string) => buffer += chunk);

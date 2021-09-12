@@ -13,7 +13,7 @@ export class File {
     /**
      * @property {PathLike} path: The path of the file
      */
-    private path: PathLike
+    public readonly path: PathLike
 
     /**
      * @property {Promise<promises.FileHandle>}: A reference to the file used for operations
@@ -28,12 +28,19 @@ export class File {
     }
 
     /**
-     * @param {string} flags
+     * @property { boolean } exists
+     */
+    public get exists(): boolean {
+      return fs.existsSync(this.path);
+    }
+
+    /**
+     * @param {string} flags - https://www.geeksforgeeks.org/node-js-fs-open-method/
      * @return {Promise<promises.FileHandle>}
      */
     public async open(flags: string = 'wx+'): Promise<promises.FileHandle> {
       try {
-        // get a file handle for reading and appending
+        // get a file handle for reading and appending'
         this.handleRequest = promises.open(this.path, flags);
         return this.handleRequest;
       }

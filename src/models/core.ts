@@ -13,9 +13,9 @@ import { HttpClient } from '../rest/httpClient';
  * @class Core
  */
 export class Core {
-  private token: string;
-  private gatewayClient: GatewayClient;
-  private httpClient: HttpClient;
+  public readonly token: string;
+  protected httpClient: HttpClient;
+  protected gatewayClient: GatewayClient;
   private interval: number = Number.MAX_SAFE_INTEGER;
   private acknowledged: boolean;
   private session_id?: string;
@@ -29,7 +29,7 @@ export class Core {
   public constructor(
       httpClient: HttpClient,
       gatewayClient: GatewayClient,
-      token: string,
+      token: string = '',
   ) {
     this.token = token;
     this.gatewayClient = gatewayClient;

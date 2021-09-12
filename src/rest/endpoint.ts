@@ -94,10 +94,43 @@ export class OAuthEndpoint<ParentEndpoint extends APIEndpoint> implements APIEnd
   }
 
   /**
+   * @return { TokenEndpoint }
+   */
+  public token(): TokenEndpoint<OAuthEndpoint<ParentEndpoint>> {
+    return new TokenEndpoint(this);
+  }
+
+  /**
    * @return { ApplicationEndpoint }
    */
   public applications(): ApplicationEndpoint<OAuthEndpoint<ParentEndpoint>> {
     return new ApplicationEndpoint(this, '@me');
+  }
+}
+
+/**
+ * @class
+ */
+export class TokenEndpoint<ParentEndpoint extends APIEndpoint> implements APIEndpoint {
+  /**
+   * @property { ParentEndpoint } parent
+   */
+  public parent: ParentEndpoint;
+
+  /**
+     * @property { URL } url
+     */
+  public get url(): URL {
+    return new URL(`token/`, this.parent.url);
+  }
+
+  /**
+   * @constructor
+   * @param { ParentEndpoint } parent
+   * @param { number } version
+   */
+  public constructor(parent: ParentEndpoint) {
+    this.parent = parent;
   }
 }
 
